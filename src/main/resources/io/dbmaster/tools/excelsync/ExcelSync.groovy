@@ -164,13 +164,13 @@ public class ExcelSync{
             Logger logger, boolean backup){
         
         if (!columnList.containsAll(keyColumnList)){
-            throw new IllegalArgumentException(columnList+" doesn't containt "+keyColumnList);
+            throw new IllegalArgumentException(""+columnList+" doesn't containt "+keyColumnList);
         }
         if (!columnList.contains(statusColumn)){
-            throw new IllegalArgumentException(columnList+" doesn't containt "+statusColumn);
+            throw new IllegalArgumentException(""+columnList+" doesn't containt "+statusColumn);
         }
         if (keyColumnList.contains(statusColumn)){
-            throw new IllegalArgumentException(keyColumnList+" containts "+statusColumn);
+            throw new IllegalArgumentException(""+keyColumnList+" containts "+statusColumn);
         }
         
         keyIndex = new int[keyColumnList.size()];
@@ -226,7 +226,7 @@ public class ExcelSync{
         try {
             eit = new ExcelIterator(file, columnList);
             if (!eit.getColumnList().containsAll(columnList)){
-               throw new IllegalArgumentException(eit.getColumnList()+" doesn't containt "+columnList);
+               throw new IllegalArgumentException(""+eit.getColumnList()+" doesn't containt "+columnList);
             }
             
             // prepare keys
