@@ -230,7 +230,7 @@ public class ExcelSync{
                Set<String> missing = new HashSet<String>();
                missing.addAll(columnList);
                missing.removeAll(eit.getColumnList());
-               throw new IllegalArgumentException(""+eit.getColumnList()+" doesn't containt "+columnList
+               throw new IllegalArgumentException(""+eit.getColumnList()+" doesn't contain "+columnList
                    +", missing columns in the excel file "+missing;
             }
             
