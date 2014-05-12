@@ -231,7 +231,7 @@ public class ExcelSync{
                missing.addAll(columnList);
                missing.removeAll(eit.getColumnList());
                throw new IllegalArgumentException(""+eit.getColumnList()+" doesn't contain "+columnList
-                   +", missing columns in the excel file "+missing;
+                   +", missing columns in the excel file "+missing);
             }
             
             // prepare keys
