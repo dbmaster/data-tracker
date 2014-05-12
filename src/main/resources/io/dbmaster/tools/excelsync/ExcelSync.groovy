@@ -8,6 +8,7 @@ import java.util.Iterator
 import java.util.List
 import java.util.Map;
 import java.util.Set;
+import java.util.HashSet;
 import java.util.Map.Entry
 
 import ExcelSync.KeyWrapper;
@@ -219,14 +220,18 @@ public class ExcelSync{
         if (backup && file.exists()){
             FileUtils.copyFile(file, new File(file.getParentFile(), 
                 FilenameUtils.getBaseName(file.getName())
-                  + "_"+new SimpleDateFormat("yyyyMMdd").format(new java.util.Date())
+                  + "_"+new SimpleDateFormat("yyyyMMddHHmm").format(new java.util.Date())
                   + "."+FilenameUtils.getExtension(file.getName())));
         }
         ExcelIterator eit = null;
         try {
             eit = new ExcelIterator(file, columnList);
             if (!eit.getColumnList().containsAll(columnList)){
-               throw new IllegalArgumentException(""+eit.getColumnList()+" doesn't containt "+columnList);
+               Set<String> missing = new HashSet<String>();
+               missing.addAll(columnList);
+               missing.removeAll(eit.getColumnList());
+               throw new IllegalArgumentException(""+eit.getColumnList()+" doesn't containt "+columnList
+                   +", missing columns in the excel file "+missing;
             }
             
             // prepare keys
@@ -256,6 +261,9 @@ public class ExcelSync{
                 eit.nextRow();
                 for (int i=0; i<keys.length; ++i){
                     keys[i] = eit.getColumn(keyIndexExcel[i]);
+                    if ("".equals(keys[i])){ // empty and null are equal
+                        keys[i] = null;
+                    }
                 }
                 KeyWrapper key = new KeyWrapper(keys);
                 Object[] values = existsRecords.remove(key);
