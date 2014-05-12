@@ -165,13 +165,13 @@ public class ExcelSync{
             Logger logger, boolean backup){
         
         if (!columnList.containsAll(keyColumnList)){
-            throw new IllegalArgumentException(""+columnList+" doesn't containt "+keyColumnList);
+            throw new IllegalArgumentException(""+columnList+" doesn't contain "+keyColumnList);
         }
         if (!columnList.contains(statusColumn)){
-            throw new IllegalArgumentException(""+columnList+" doesn't containt "+statusColumn);
+            throw new IllegalArgumentException(""+columnList+" doesn't contain "+statusColumn);
         }
         if (keyColumnList.contains(statusColumn)){
-            throw new IllegalArgumentException(""+keyColumnList+" containts "+statusColumn);
+            throw new IllegalArgumentException(""+keyColumnList+" contains "+statusColumn);
         }
         
         keyIndex = new int[keyColumnList.size()];
