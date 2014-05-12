@@ -13,7 +13,7 @@
 
     <parent>
         <groupId>io.dbmaster.tools</groupId>
-        <artifactId>parent-pom</artifactId>
+        <artifactId>dbmaster-root</artifactId>
         <version>1.0.0</version>
     </parent>
 
