@@ -40,7 +40,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import java.text.SimpleDateFormat;
 
-class ExcelIterator implements Closeable{
+class ExcelIterator implements Closeable {
     final File file;
     final List<String> columnList;
     Row row;
@@ -117,7 +117,7 @@ class ExcelIterator implements Closeable{
     
 }
 
-public class ExcelSync{
+public class ExcelSync {
     private final File file;
     
     private final List<String> columnList;
@@ -156,13 +156,17 @@ public class ExcelSync{
         }
     }
     
-    public ExcelSync(List<String> columnList, List<String> keyColumnList, String statusColumn,
+    public ExcelSync(
+            List<String> columnList,
+            List<String> keyColumnList,
+            String statusColumn,
             String newStatusStatus,
             String autoCloseStatus,
             Set<String> ignoreAutoCloseStatusSet,
             Set<String> nonOpenStatusSet,
             File file,
-            Logger logger, boolean backup){
+            Logger logger,
+            boolean backup){
         
         if (!columnList.containsAll(keyColumnList)){
             throw new IllegalArgumentException(""+columnList+" doesn't contain "+keyColumnList);

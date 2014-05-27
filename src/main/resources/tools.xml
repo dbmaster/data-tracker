@@ -1,0 +1,29 @@
+<tools>
+    <tool id="data-tracker" title="Data Tracker" projectTypes="inventory">
+        <parameters>
+            <parameter name="p_tool_id"       title="Tool"       type="string" required="true" width="150" />
+            <parameter name="p_shortcut"      title="Shortcut"   type="string" required="true" width="150" />
+            <!-- Set of columns -->
+            <parameter name="p_columns"       title="Columns"        type="string"  width="150" />
+            <!-- Set of columns -->
+            <parameter name="p_key_columns"           title="Key Columns"    type="string" required="true"  width="150" />
+            <parameter name="p_status_column" title="Status Column"    type="string" required="true"  width="150" />
+            <parameter name="p_new_status"    title="Status For New Records"    type="string" required="true"  width="150" defaultValue="New" />
+            <parameter name="p_old_status"    title="Status For Deleted Records"    type="string" required="true"  width="150" />
+            <!-- Set of columns -->
+            <parameter name="p_ignore_statuses"    title="Ignore Statuses"    type="string" required="true"  width="150" />
+            <!-- Set of columns -->
+            <parameter name="p_final_statuses"     title="Closed Statuses"    type="string" required="true"  width="150" />
+            <parameter name="p_tracking_file"    title="Excel File"    type="string" required="true"  width="150" />
+            <parameter name="p_backup_flag"    title="Backup Excel"    type="boolean" required="true"  width="150" defaultValue="true" />
+
+            <parameter name="p_email_to"       title="Email Recepients"    type="string" required="false"  width="150"  />
+            <parameter name="p_email_subject"  title="Email Subject"    type="string" required="false"  width="150" />
+            <parameter name="p_email_body"     title="Email Body"    type="text" required="false"  width="150" />
+
+        </parameters>
+
+        <output  script="data-tracker.groovy" type="html" />
+    </tool>
+    
+</tools>
