@@ -3,9 +3,9 @@
 
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>excel-tracking</artifactId>
+    <artifactId>data-tracker</artifactId>
 
-    <name>Excel tracking component</name>
+    <name>Data Tracker</name>
     <description>Auxiliary plug-in for tracking changes with an excel file</description>
 
     <version>0.0.2</version>
