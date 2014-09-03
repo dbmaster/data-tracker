@@ -29,8 +29,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.LinkedHashMap;
 import org.apache.commons.io.FileUtils;
+
+
 import org.apache.commons.io.IOUtils;
+import org.apache.poi.ss.usermodel.BuiltinFormats;
 import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -38,6 +42,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.slf4j.Logger;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
+
 import java.text.SimpleDateFormat;
 
 class ExcelIterator implements Closeable {
@@ -98,18 +103,40 @@ class ExcelIterator implements Closeable {
         if (cell == null){
             cell = row.createCell(index);
         }
-        cell.setCellValue((String)object);
+        if (object instanceof Date){
+            cell.setCellValue((Date)object)
+        } else {
+            cell.setCellValue((String)object);
+        }
     }
     public List<String> getColumnList() {
         return columnList;
+    }
+    
+    public void setDateTimeFormat(int column, String format){
+        Sheet sheet = row.getSheet();
+        Workbook workbook =  sheet.getWorkbook();
+        CellStyle style = sheet.getColumnStyle(column);
+        if (style==null){
+            style = workbook.createCellStyle();
+        }
+        style.setDataFormat(workbook.createDataFormat().getFormat(format));
+        sheet.setDefaultColumnStyle(column,style);
     }
     
 
     public void close() throws IOException {
         OutputStream os = null;
         try{
+            if (file.exists() && !file.renameTo(new File(file.getName()+".bak"))){
+                throw new java.lang.IllegalStateException("Can not rename file");
+            }
             os = FileUtils.openOutputStream(file);
             row.getSheet().getWorkbook().write(os);
+            os.flush();
+            IOUtils.closeQuietly(os);
+            os = null;
+            FileUtils.deleteQuietly(new File(file.getName()+".bak"));
         } finally {
             IOUtils.closeQuietly(os);
         }
@@ -123,6 +150,7 @@ public class ExcelSync {
     private final List<String> columnList;
     private final List<String> keyColumnList;
     private final String statusColumn;
+    private final String changeDateColumn;
     private final String newStatusStatus;
     private final String autoCloseStatus;
     private final Set<String> ignoreAutoCloseStatusSet;
@@ -160,6 +188,7 @@ public class ExcelSync {
             List<String> columnList,
             List<String> keyColumnList,
             String statusColumn,
+            String changeDateColumn,
             String newStatusStatus,
             String autoCloseStatus,
             Set<String> ignoreAutoCloseStatusSet,
@@ -167,15 +196,20 @@ public class ExcelSync {
             File file,
             Logger logger,
             boolean backup){
-        
         if (!columnList.containsAll(keyColumnList)){
             throw new IllegalArgumentException(""+columnList+" doesn't contain "+keyColumnList);
         }
         if (!columnList.contains(statusColumn)){
             throw new IllegalArgumentException(""+columnList+" doesn't contain "+statusColumn);
         }
+        if (changeDateColumn!=null && !columnList.contains(changeDateColumn)){
+            throw new IllegalArgumentException(""+columnList+" doesn't contain "+changeDateColumn);
+        }
         if (keyColumnList.contains(statusColumn)){
             throw new IllegalArgumentException(""+keyColumnList+" contains "+statusColumn);
+        }
+        if (changeDateColumn!=null && keyColumnList.contains(changeDateColumn)){
+            throw new IllegalArgumentException(""+keyColumnList+" contains "+changeDateColumn);
         }
         
         keyIndex = new int[keyColumnList.size()];
@@ -188,7 +222,7 @@ public class ExcelSync {
         columnIndex = new int[columnList.size()-keyColumnList.size()-1];
         for (int i=0; i<columnList.size(); ++i){
             String c = columnList.get(i);
-            if (keyColumnList.contains(c) || c.equals(statusColumn)){
+            if (keyColumnList.contains(c) || c.equals(statusColumn) || c.equals(changeDateColumn)){
                 continue;
             }
             columnIndex[j++] = i;
@@ -198,12 +232,28 @@ public class ExcelSync {
         this.columnList = columnList;
         this.keyColumnList = keyColumnList;
         this.statusColumn = statusColumn;
+        this.changeDateColumn = changeDateColumn;
         this.newStatusStatus = newStatusStatus;
         this.autoCloseStatus = autoCloseStatus;
         this.ignoreAutoCloseStatusSet = ignoreAutoCloseStatusSet;
         this.nonOpenStatusSet = nonOpenStatusSet;
         this.logger = logger;
         this.backup = backup;
+    }
+    
+    public ExcelSync(
+            List<String> columnList,
+            List<String> keyColumnList,
+            String statusColumn,
+            String newStatusStatus,
+            String autoCloseStatus,
+            Set<String> ignoreAutoCloseStatusSet,
+            Set<String> nonOpenStatusSet,
+            File file,
+            Logger logger,
+            boolean backup){
+       this(columnList, keyColumnList, statusColumn, null, newStatusStatus, autoCloseStatus,
+           ignoreAutoCloseStatusSet, nonOpenStatusSet, file, logger, backup);
     }
     
     public void addRow(Object... args){
@@ -246,12 +296,16 @@ public class ExcelSync {
             }
             // prepare status column
             int statusColumnIndexExcel = eit.getColumnList().indexOf(statusColumn);
+            int dateChangeColumnIndexExcel = changeDateColumn!=null?eit.getColumnList().indexOf(changeDateColumn):-1;
+            /*if (dateChangeColumnIndexExcel!=-1){
+                eit.setDateTimeFormat(dateChangeColumnIndexExcel, "m/d/yy h:mm");
+            }*/
             // prepare values
             int j = 0;
             int[] columnIndexExcel = new int[columnList.size()-keyColumnList.size()-1];
             for (int i=0; i<columnList.size(); ++i){
                 String c = columnList.get(i);
-                if (keyColumnList.contains(c) || c.equals(statusColumn)){
+                if (keyColumnList.contains(c) || c.equals(statusColumn) || c.equals(changeDateColumn)){
                     continue;
                 }
                 columnIndexExcel[j++] = eit.getColumnList().indexOf(c);
@@ -278,6 +332,9 @@ public class ExcelSync {
                     if (!ignoreAutoCloseStatusSet.contains(eit.getColumn(statusColumnIndexExcel))){ // force new status
                         if (!newStatusStatus.equals(eit.getColumn(statusColumnIndexExcel))){
                             eit.setColumn(statusColumnIndexExcel, newStatusStatus);
+                            if (dateChangeColumnIndexExcel != -1){
+                                eit.setColumn(dateChangeColumnIndexExcel, new Date());
+                            }
                             newScore++;
                         }
                     }
@@ -285,6 +342,9 @@ public class ExcelSync {
                     if (!ignoreAutoCloseStatusSet.contains(eit.getColumn(statusColumnIndexExcel))){ // force autoclosed status
                         if (!autoCloseStatus.equals(eit.getColumn(statusColumnIndexExcel))){
                             eit.setColumn(statusColumnIndexExcel, autoCloseStatus);
+                            if (dateChangeColumnIndexExcel != -1){
+                                eit.setColumn(dateChangeColumnIndexExcel, new Date());
+                            }
                             autoClosedScore++;
                         }
                     }
@@ -307,6 +367,9 @@ public class ExcelSync {
                     eit.setColumn(columnIndexExcel[i], values[i]);
                 }
                 eit.setColumn(statusColumnIndexExcel, newStatusStatus);
+                if (dateChangeColumnIndexExcel != -1){
+                    eit.setColumn(dateChangeColumnIndexExcel, new Date());
+                }
             }
             int[] score = new int[3];
             score[0] = newScore;
