@@ -47,9 +47,10 @@ public class DBMasterSync {
     private final String autoCloseStatus
     private final Set<String> ignoreAutoCloseStatusSet
     private final Set<String> nonOpenStatusSet
+    private final Set<String> doNotUpdateFields
     
     private final Logger logger
-    private final DbMaster dbmaster
+    private final DbMaster dbm
     
     private final int[] keyIndex
     
@@ -105,6 +106,7 @@ public class DBMasterSync {
         this.autoCloseStatus = autoCloseStatus
         this.ignoreAutoCloseStatusSet = ignoreAutoCloseStatusSet
         this.nonOpenStatusSet = nonOpenStatusSet
+        this.doNotUpdateFields = doNotUpdateFields
 
         this.dbm = dbm
         this.logger = logger
@@ -124,18 +126,17 @@ public class DBMasterSync {
         }
         
         List<CustomObjectTypeEntity> types = customService.getCustomObjectTypeList()
-        def trackingType = types.find { it.getObjectName().equals(trackingStorageType)}
+        def trackingType = types.find { it.getObjectName().equals(storageType)}
         
         if (trackingType==null) {
             trackingType = new CustomObjectTypeEntity()
-            trackingType.setObjectName(trackingStorageType)
+            trackingType.setObjectName(storageType)
             trackingType.setCreate(false)
             trackingType.setUpdate(true)
             trackingType.setDelete(true)
             trackingType = customService.createCustomObjectType(trackingType)
             
             fields.each { field ->
-                field.setType(trackingStorageType)
                 cfService.createCustomFieldConfig(trackingType, field, false)
             }
         }
@@ -145,13 +146,14 @@ public class DBMasterSync {
         dbRecords = new LinkedHashMap<KeyWrapper, CustomObjectEntity>()
         
         def request = new QueryRequest(objectFilter)
-        customService.getCustomObjectSlice(trackingType.getObjectName(), request).each { row ->
-            Object[] keyValues = new Object[keyColumnList.length]
-            for (int i=0; i<keyColumnList.length; ++i) {
-                keyValues[i] = row.getCustomData(keyColumnList[i])
+        customService.getCustomObjectSlice(storageType, request).each { row ->
+            Object[] keyValues = new Object[keyColumnList.size()]
+            for (int i=0; i<keyColumnList.size(); ++i) {
+                keyValues[i] = row.getCustomData(keyColumnList.get(i))
             }
-            if (dbRecords.put(new KeyWrapper(keys), row)!=null) {
-                logger.warn("Object with key {} already exists", Arrays.toString(keys))
+            logger.debug("key=${Arrays.toString(keyValues)}")
+            if (dbRecords.put(new KeyWrapper(keyValues), row)!=null) {
+                logger.warn("Object with key {} already exists", Arrays.toString(keyValues))
             }
         }
         logger.info("Loaded ${dbRecords.size()} records with filter ${objectFilter}")
@@ -163,7 +165,8 @@ public class DBMasterSync {
         for (int i=0; i<keyIndex.length; ++i) {
             keyValues[i] = args[keyIndex[i]]
         }
-        def key = new KeyWrapper(keyValues, true)
+        def key = new KeyWrapper(keyValues)
+        logger.debug("key2=${Arrays.toString(keyValues)}")
         if (updatedKeys.contains(key)) {
             logger.warn("Object with key {} already exists", Arrays.toString(keyValues))
         }
@@ -171,14 +174,26 @@ public class DBMasterSync {
         if (record==null) {
             record = new CustomObjectEntity()
             record.setDiscriminator(storageType)
-            for (int i=0;i<fields.size;i++) {
+            for (int i=0; i<fields.size; i++) {
                 record.setCustomData(fields.get(i).name, args[i])
             }
+            record.setCustomData(statusColumn, newStatusStatus)
+            dbRecords[key] = record
         } else {
-            for (int i=0;i<fields.size;i++) {
+            for (int i=0; i<fields.size; i++) {
                 def fieldName = fields.get(i).name 
                 if (!keyColumnList.contains(fieldName) && !doNotUpdateFields.contains(fieldName)) {
-                    record.setCustomData(fieldName)
+                    record.setCustomData(fieldName, args[i])
+                }
+            }
+            def recordStatus = object.getCustomData(statusColumn)
+
+            // force open status
+            if (!ignoreAutoCloseStatusSet.contains(recordStatus)) {
+                if (!newStatusStatus.equals(recordStatus)) {
+                    recordStatus = newStatusStatus
+                    object.setCustomData(statusColumn, newStatusStatus)
+                    // newRecords++
                 }
             }
         }
@@ -194,8 +209,9 @@ public class DBMasterSync {
             String recordStatus;
             
             // prepare values
-            dbRecords..each { key, object -> 
+            dbRecords.each { key, object -> 
                 if (updatedKeys.contains(key)) {
+                    logger.debug("id=${object.getId()} isPersisted=${object.isPersisted()} updatedby=${object.getUpdateAuthor()}")
                     if (object.getId() == 0) {
                         newRecords++;
                         object.setCustomData(statusColumn, newStatusStatus)
@@ -204,15 +220,6 @@ public class DBMasterSync {
                     } else {
                         customService.updateCustomObject(object)
                         recordStatus = object.getCustomData(statusColumn)
-
-                        // force open status
-                        if (!ignoreAutoCloseStatusSet.contains(recordStatus)) {
-                            if (!newStatusStatus.equals(recordStatus)) {
-                                recordStatus = newStatusStatus
-                                object.setCustomData(statusColumn, newStatusStatus)
-                                newRecords++
-                            }
-                        }
                     }
                 } else {
                     // force autoclosed status
@@ -234,8 +241,6 @@ public class DBMasterSync {
             return [ newRecords, autoClosedRecords, openRecords ] as int[]
         } catch (IOException e) {
             throw new IllegalStateException(e)
-        } finally {
-            IOUtils.closeQuietly(eit);
         }
     }   
 }
