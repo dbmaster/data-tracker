@@ -151,7 +151,6 @@ public class DBMasterSync {
             for (int i=0; i<keyColumnList.size(); ++i) {
                 keyValues[i] = row.getCustomData(keyColumnList.get(i))
             }
-            logger.debug("key=${Arrays.toString(keyValues)}")
             if (dbRecords.put(new KeyWrapper(keyValues), row)!=null) {
                 logger.warn("Object with key {} already exists", Arrays.toString(keyValues))
             }
@@ -166,7 +165,6 @@ public class DBMasterSync {
             keyValues[i] = args[keyIndex[i]]
         }
         def key = new KeyWrapper(keyValues)
-        logger.debug("key2=${Arrays.toString(keyValues)}")
         if (updatedKeys.contains(key)) {
             logger.warn("Object with key {} already exists", Arrays.toString(keyValues))
         }
@@ -211,7 +209,6 @@ public class DBMasterSync {
             // prepare values
             dbRecords.each { key, object -> 
                 if (updatedKeys.contains(key)) {
-                    logger.debug("id=${object.getId()} isPersisted=${object.isPersisted()} updatedby=${object.getUpdateAuthor()}")
                     if (object.getId() == 0) {
                         newRecords++;
                         object.setCustomData(statusColumn, newStatusStatus)
