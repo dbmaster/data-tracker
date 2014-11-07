@@ -8,7 +8,7 @@
     <name>Data Tracker</name>
     <description>Auxiliary plug-in for tracking changes with an excel file</description>
 
-    <version>0.0.7</version>
+    <version>0.1.0</version>
     <packaging>bundle</packaging>
 
     <parent>
@@ -28,7 +28,7 @@
                     <instructions>
                         <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
                         <Import-Package>io.dbmaster.api;version="1.8.0",!org.slf4j.*</Import-Package>
-                        <Export-Package>io.dbmaster.tools.excelsync;version="${project.version}"</Export-Package>
+                        <Export-Package>io.dbmaster.tools.datatracker;version="${project.version}"</Export-Package>
                     </instructions>
                 </configuration>
             </plugin>
