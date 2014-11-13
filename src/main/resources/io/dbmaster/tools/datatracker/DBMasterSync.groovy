@@ -184,13 +184,13 @@ public class DBMasterSync {
                     record.setCustomData(fieldName, args[i])
                 }
             }
-            def recordStatus = object.getCustomData(statusColumn)
+            def recordStatus = record.getCustomData(statusColumn)
 
             // force open status
             if (!ignoreAutoCloseStatusSet.contains(recordStatus)) {
                 if (!newStatusStatus.equals(recordStatus)) {
                     recordStatus = newStatusStatus
-                    object.setCustomData(statusColumn, newStatusStatus)
+                    record.setCustomData(statusColumn, newStatusStatus)
                     // newRecords++
                 }
             }

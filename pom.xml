@@ -8,7 +8,7 @@
     <name>Data Tracker</name>
     <description>Auxiliary plug-in for tracking changes with an excel file</description>
 
-    <version>0.1.0</version>
+    <version>0.1.2</version>
     <packaging>bundle</packaging>
 
     <parent>
